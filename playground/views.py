@@ -1,6 +1,7 @@
 from django.forms import DecimalField
 from django.shortcuts import render
 from django.http import HttpResponse
+from rest_framework.generics import ListCreateAPIView
 
 from hub.models import Customer, Genre, Movie, RentOrder
 
@@ -85,3 +86,104 @@ def get_revenue_data(day, month, year):
 
 def get_top_customers(request):
     queryset = Customer.objects.annotate(orders_count=Count('rentorder'))
+
+
+    #The ability to override the save method is something that may come in handy in the future when we want to override how objects are
+    #saved by unpacking the validated data that we pass in through JSON and use that data by either associating it with another class by 
+    # performing checks or adding some logic into it.
+
+    def create(self, validated_data):
+        movie = Movie(**validated_data)
+        #adding a new field
+        movie.posters = poster
+        movie.save()
+        return movie
+    
+    #We also have the ability to override how objects are updated, by updating the fields already in the object.
+    def update(self, instance, validated_data):
+        #instance is the default name django expects to look for no matter the object it is dealing with.
+        #We use the get method to get the specific information of the object that we would need.
+        instance.unit_price = validated_data.get('unit_price')
+        instance.save()
+        return instance
+    
+
+class MovieList(ListCreateAPIView):
+    pass
+    # # def get(self, request):
+    # #     #eagerloading the movies with their genres to speed up queries.
+    # #     queryset = Movie.objects.prefetch_related('genres').all()
+    # #     #Returning all movies by iterating on it using the many keyword.
+    # #     serializer = MovieSerializer(queryset, many=True, context={'request': request})
+    # #     return Response(serializer.data)
+    
+    #  def post(self, request):
+    # #     #Deserializing the JSON data object passed by the client into a python object
+    # #     serializer = MovieSerializer(data=request.data)
+    # #     #Validating the data in order to save it
+         #  serializer.is_valid(raise_exception=True)
+    #calling the save method in order to save the information passed in the
+     # validated data dictionary into the database
+    # #     serializer.save()
+    # #     #Returning the validated data
+    # #     return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    # #since most of the post and create operations are already encapsulated in the ListCreateApiView, all we
+    # # would need are the queryset, serializer class and the serializer context if available.
+    # # If we ever need to add logic, to the queryset or the serializer class we can the use the def get_queryset, 
+    # # the get_ serializer_class or the get_serializer_context.
+    # def get_queryset(self):
+    #     return Movie.objects.prefetch_related('genres').all()
+    
+    
+    # def get_serializer_class(self):
+    #     return MovieSerializer
+    
+    # def get_serializer_context(self):
+    #     return {'request': self.request}
+    
+    #But since we do not want to add extra logic, we can assign a query and a serializer class
+    # to the queryset and serializer class variables.
+    # queryset = Movie.objects.prefetch_related('genres').all()
+
+    # serializer_class = MovieSerializer
+
+
+    #We can use the Modelviewset to combine the logic for multiple related views
+    #For instance, we can combine both the Movie list and the Movie Detail viewset into one.
+    # 
+    #The model viewset has the combination of all the mixins: Create, Retrieve, Update, Destroy, and List.
+    # from rest_framework.viewsets import ModelViewSet
+    #  
+
+    # with this implementation, we can forgo the need to create a Movie List and detail classes
+    # Only inclusing the queryset, Serializer class and any other additional logic here. 
+    #class MovieViewSet(ModelViewSet):
+    #   queryset = Movie.objects.all()
+    #   serializer_class = MovieSerializer
+    # 
+    #   def get_serializer_context(self):
+    #       return {'request': self.request} 
+
+    #   def delete(self, request, pk):
+    #        movie = get_object_or_404(Movie, pk)
+    #        if movie.rentorderitems.count > 0:
+    #        return Response({'error': 'Movie cannot be deleted because it is associated with a rent orderitem'}, status=status.HTTP_405_METHOD_NOT_ALLOWED)
+            # movie.delete()
+            # return Response(status=status.HTTP_204_NO_CONTENT) 
+
+
+    # # Function to override the queryset to allow for filtering.
+    # def get_queryset(self):
+    #     queryset = Movie.objects.prefetch_related('genres').all()
+    #     genres_id = self.request.query_params.get('genres_id')
+        
+    #     #Getting the collection id that is in the query parameters and storing it.
+    #     if genres_id is not None:
+    #          #The genres field on the Movie model is a ManyToManyField which creates an intermediary table
+    #          # to manage the relationship between Movie and Genre models. As a result, I cannot directly filter on genres_id
+    #          # as it is not a field of the Movie model. 
+    #          #To filter movies based on the genres_id provided in the query parameters, I need to use the correct field name 
+    #          # for the genres relationship in the filter method. Since it's a ManyToManyField, 
+    #          # I should use the double underscore notation to access the ID of the related Genre model.
+    #         queryset = queryset.filter(genres__id=genres_id)

@@ -13,6 +13,8 @@ faker = "*"
 django-restframework = "*"
 django = "==4.2.3"
 djangorestframework = "*"
+drf-nested-routers = "*"
+django-filter = "*"
 
 [dev-packages]
 ipykernel = "*"
