@@ -123,3 +123,41 @@ class ReviewSerializer(serializers.ModelSerializer):
         return Review.objects.create(movie_id=movie_id, **validated_data)
     
 
+#Class created specifically for adding items to a cart
+class AddCartItemSerializer(serializers.ModelSerializer):
+    movie_id = serializers.IntegerField()
+
+    #Function for validating the movie_id passed into the cart
+    def validate_movie_id(self, value):
+        #checking to see if it exists
+        if not Movie.objects.filter(pk=value).exists():
+            raise serializers.ValidationError('No movie with ethe id exists.')
+        return value
+
+
+
+    class Meta:
+        model = CartItem
+        fields = ['id', 'movie_id', 'quantity']
+
+    #Overriding the default creating method with a custom one.
+    def save(self, **kwargs):
+        #Getting cart_id passed into the serializer context from the urls
+        cart_id = self.context['cart_id']
+        #accessing the data passed into the client from the validated data dictionary
+        movie_id = self.validated_data['movie_id']
+        quantity = self.validated_data['quantity']
+
+        try:
+            #Updating the quantity of the cart item if it exists
+            cart_item = CartItem.objects.get(cart_id=cart_id, movie_id=movie_id)
+            if cart_item is not None:
+                cart_item.quantity += quantity
+                cart_item.save()
+                self.instance = cart_item
+        except CartItem.DoesNotExist:
+            #Creating the cart item since it does not exist.
+            self.instance = CartItem.objects.create(cart_id=cart_id, **self.validated_data)
+        
+        return self.instance
+            

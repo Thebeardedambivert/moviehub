@@ -10,7 +10,7 @@ from rest_framework import mixins
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import GenreFilters, MovieFilters, CartItemFilters
 from .models import Cart, CartItem,Genre, Movie, Review
-from .serializers import CartSerializer, CartItemSerializer, GenreSerializer, MovieSerializer, ReviewSerializer
+from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, GenreSerializer, MovieSerializer, ReviewSerializer
 
 
 #Note to self, create a late fee charge custom view in the Order view 
@@ -79,15 +79,21 @@ class CartViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Des
 
 
 class CartItemViewSet(ModelViewSet):
-    serializer_class = CartItemSerializer
     filter_backends = [DjangoFilterBackend]
     filterset_class = CartItemFilters
 
     #Since we don't want to return all cart items and only want to return items based
     #on the cart id given, we would have to override the queryset.
     def get_queryset(self):
-        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk']).select_related('movie')
     
+    #function to return a serializer class depending on the operation the user seeks to carry out
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return AddCartItemSerializer
+        return CartItemSerializer
+    
+    #function to extract the cart id from the urls defined in urls.py
     def get_serializer_context(self):
         return {'cart_id': self.kwargs.get('cart_pk')}
             

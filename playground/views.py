@@ -100,6 +100,8 @@ def get_top_customers(request):
         movie = Movie(**validated_data)
         #adding a new field
         movie.posters = poster
+        #accessing individual fields
+        movie_id = self.validated_data['movie_pk']
         movie.save()
         return movie
     
