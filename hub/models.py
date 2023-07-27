@@ -19,7 +19,6 @@ class Promotion(models.Model):
 class Genre(models.Model):
     title = models.CharField(max_length=255)
    
-   
     def __str__(self):
         return str(self.title)
     
@@ -132,7 +131,11 @@ class CartItem(models.Model):
     quantity = models.PositiveSmallIntegerField(
         validators=[MinValueValidator(1)]
     )
-
+    
+    class Meta:
+        #Makes it possible for there not to be duplication. When trying to add or increase the number of
+        #  a movie to a cart, instead of creating another cart, we would instead just increase only its quantity.
+        unique_together = [['cart', 'movie']]
 
 class Review(models.Model):
     movie = models.ForeignKey(Movie, on_delete=models.CASCADE, related_name='reviews')

@@ -1,5 +1,5 @@
 import django_filters
-from .models import Movie, Genre
+from .models import CartItem, Movie, Genre
 
 
 #Custom class for filtering where we specify the traverse the relationship paths of a many to many relationship
@@ -21,3 +21,10 @@ class MovieFilters(django_filters.FilterSet):
                   'daily_rental_rate': ['gt', 'lt'],
                   'inventory': ['gt', 'lt']
                   }
+        
+class CartItemFilters(django_filters.FilterSet):
+    cart_id = django_filters.CharFilter(field_name='cart_id', lookup_expr='exact')
+
+    class Meta:
+        model = CartItem
+        fields = ['cart']

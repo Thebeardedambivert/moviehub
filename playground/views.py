@@ -10,6 +10,10 @@ from hub.models import Customer, Genre, Movie, RentOrder
 # frontend client passes through
 # to the server. A response is shaped depending on how the view is defined.
 
+
+#Note to self to add a feature where carts that have been abandoned for more than 3 months should
+# be deleted by using the created_at field in the cart model. 
+
 def say_hello(request):
     return render(request, 'hello.html', {'name': 'Uzo'})
 

@@ -4,7 +4,7 @@
 from decimal import Decimal
 from django.db.models.aggregates import Count
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Genre, Movie, Review 
+from .models import Cart, CartItem, Genre, Movie, Review 
 from rest_framework import serializers
 
 
@@ -23,18 +23,11 @@ class GenreSerializer(serializers.ModelSerializer):
     movie = serializers.StringRelatedField(many=True)
     
 
-    
-    
-
     #I may need to change how we pass information to the movie serializer by
     # updating the field using a ListField instead. I should attempt to achieve this when I 
     # have learned how to dynamically extract the queryset from a view using a serializer context instead of just 
     # querying all the movies one by one which is going to affect the performance of the code.
     #movie = serializers.ListField(child=serializers.PrimaryKeyRelatedField(queryset=Genre.objects.filter(movie__id=movie_id), many=True), allow_empty=False)
- 
-     
-
-    
 
     
     # movies = serializers.SerializerMethodField(method_name='get_movies')
@@ -71,6 +64,49 @@ class MovieSerializer(serializers.ModelSerializer):
     def calculate_tax(self, movie: Movie):
         return movie.daily_rental_rate * Decimal(1.1)
     
+#Serializer class to pass in the cartitem class as an object. Getting only the necessary fields
+# that we require. 
+class SimpleMovieSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Movie
+        fields = ['id', 'title', 'daily_rental_rate']
+
+class CartItemSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CartItem
+        fields = ['id', 'quantity', 'movie', 'cart','total_price']
+
+
+    movie = SimpleMovieSerializer()
+    cart = serializers.PrimaryKeyRelatedField(read_only=True)
+
+    total_price = serializers.SerializerMethodField(method_name='get_total_price')
+
+    def get_total_price(self, cartitem: CartItem):
+        return cartitem.movie.daily_rental_rate * cartitem.quantity
+
+
+
+class CartSerializer(serializers.ModelSerializer):
+    #Setting the id field into a UUID field
+
+    class Meta:
+        model = Cart
+        fields = ['id', 'items', 'total_price']
+
+    def get_total_price(self, cart: Cart):
+           #Accessing the related child using a list comprehension and storing it in
+           # the item variable so that we can perform actions on individual fields. 
+           return sum([item.quantity * item.movie.daily_rental_rate for item in cart.items.all()])
+
+    id = serializers.UUIDField(read_only=True)
+    items = CartItemSerializer(many=True, read_only=True)
+    total_price = serializers.SerializerMethodField(method_name='get_total_price')
+
+    
+
+
+
 
 
 #Serializer class to convert the list of reviews to dictionary objects
@@ -85,3 +121,5 @@ class ReviewSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         movie_id = self.context['movie_id']
         return Review.objects.create(movie_id=movie_id, **validated_data)
+    
+

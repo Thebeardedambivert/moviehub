@@ -1,14 +1,16 @@
 from django.shortcuts import get_object_or_404
 from django.db.models.aggregates import Count
 from django_filters.rest_framework import DjangoFilterBackend
-from .filters import GenreFilters, MovieFilters
 #modules to search and filter the data
-from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework import status
+from rest_framework.filters import SearchFilter, OrderingFilter
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from rest_framework.viewsets import ModelViewSet
-from .models import Genre, Movie, Review
-from .serializers import GenreSerializer, MovieSerializer, ReviewSerializer
+from rest_framework import mixins
+from rest_framework.viewsets import ModelViewSet, GenericViewSet
+from .filters import GenreFilters, MovieFilters, CartItemFilters
+from .models import Cart, CartItem,Genre, Movie, Review
+from .serializers import CartSerializer, CartItemSerializer, GenreSerializer, MovieSerializer, ReviewSerializer
 
 
 #Note to self, create a late fee charge custom view in the Order view 
@@ -65,6 +67,31 @@ class GenreViewSet(ModelViewSet):
     
     def get_serializer_context(self):
         return {'movie_id': self.kwargs.get('movie_pk')}
+
+
+
+class CartViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+    #Performing an eager load where we get all items related with cart and also the related movies of each item.
+    queryset = Cart.objects.prefetch_related('items__movie').all()
+    serializer_class = CartSerializer
+        
+
+
+
+class CartItemViewSet(ModelViewSet):
+    serializer_class = CartItemSerializer
+    filter_backends = [DjangoFilterBackend]
+    filterset_class = CartItemFilters
+
+    #Since we don't want to return all cart items and only want to return items based
+    #on the cart id given, we would have to override the queryset.
+    def get_queryset(self):
+        return CartItem.objects.filter(cart_id=self.kwargs['cart_pk'])
+    
+    def get_serializer_context(self):
+        return {'cart_id': self.kwargs.get('cart_pk')}
+            
+
 
 
 
