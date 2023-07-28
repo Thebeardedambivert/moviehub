@@ -131,7 +131,7 @@ class AddCartItemSerializer(serializers.ModelSerializer):
     def validate_movie_id(self, value):
         #checking to see if it exists
         if not Movie.objects.filter(pk=value).exists():
-            raise serializers.ValidationError('No movie with ethe id exists.')
+            raise serializers.ValidationError('No movie with the id exists.')
         return value
 
 
@@ -160,4 +160,10 @@ class AddCartItemSerializer(serializers.ModelSerializer):
             self.instance = CartItem.objects.create(cart_id=cart_id, **self.validated_data)
         
         return self.instance
-            
+    
+
+class UpdateCartItemSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = CartItem
+        fields = ['quantity']

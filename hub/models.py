@@ -1,4 +1,6 @@
 import random
+from django.conf import settings
+from django.contrib import admin
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.db import models
 import barcode
@@ -71,13 +73,24 @@ class Movie(models.Model):
 
 
 class Customer(models.Model):
-    first_name = models.CharField(max_length=255)
-    last_name = models.CharField(max_length=255)
     age = models.PositiveIntegerField(validators=[MinValueValidator(3), MaxValueValidator(100)], null=True, blank=True)
     phone = models.CharField(max_length=255)
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
 
     def __str__(self):
-        return f'{self.first_name} {self.last_name}'
+        return f'{self.user.first_name} {self.user.last_name}'
+    
+
+    @admin.display(ordering='user__first_name')
+    def first_name(self):
+        return self.user.first_name
+    
+    @admin.display(ordering='user__last_name')
+    def last_name(self):
+        return self.user.last_name
+    
+    class Meta:
+        ordering = ['user__first_name', 'user__last_name']
 
 
 class RentOrder(models.Model):
@@ -105,6 +118,11 @@ class RentOrder(models.Model):
     return_date = models.DateTimeField(auto_now=True, blank=True, null=True)
     payment_status = models.CharField(max_length=1, choices=PAYMENT_STATUS_CHOICES, default=PAYMENT_STATUS_PENDING)
     customer = models.ForeignKey(Customer, on_delete=models.PROTECT)
+
+    class Meta:
+        permissions = [
+            ('cancel_order', 'Can cancel order')
+        ]
 
 
 class RentOrderItem(models.Model):

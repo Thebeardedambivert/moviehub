@@ -10,7 +10,7 @@ from rest_framework import mixins
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import GenreFilters, MovieFilters, CartItemFilters
 from .models import Cart, CartItem,Genre, Movie, Review
-from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, GenreSerializer, MovieSerializer, ReviewSerializer
+from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, GenreSerializer, MovieSerializer, ReviewSerializer, UpdateCartItemSerializer
 
 
 #Note to self, create a late fee charge custom view in the Order view 
@@ -70,7 +70,11 @@ class GenreViewSet(ModelViewSet):
 
 
 
-class CartViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.DestroyModelMixin, GenericViewSet):
+class CartViewSet(mixins.CreateModelMixin, 
+                  mixins.RetrieveModelMixin, 
+                  mixins.UpdateModelMixin, 
+                  mixins.DestroyModelMixin, 
+                  GenericViewSet):
     #Performing an eager load where we get all items related with cart and also the related movies of each item.
     queryset = Cart.objects.prefetch_related('items__movie').all()
     serializer_class = CartSerializer
@@ -79,6 +83,10 @@ class CartViewSet(mixins.CreateModelMixin, mixins.RetrieveModelMixin, mixins.Des
 
 
 class CartItemViewSet(ModelViewSet):
+    #List of http method names that we allow
+    http_method_names = ['get', 'post', 'patch', 'delete']
+
+
     filter_backends = [DjangoFilterBackend]
     filterset_class = CartItemFilters
 
@@ -91,6 +99,8 @@ class CartItemViewSet(ModelViewSet):
     def get_serializer_class(self):
         if self.request.method == 'POST':
             return AddCartItemSerializer
+        elif self.request.method == 'PATCH':
+            return UpdateCartItemSerializer
         return CartItemSerializer
     
     #function to extract the cart id from the urls defined in urls.py
