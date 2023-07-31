@@ -2,9 +2,8 @@
 #and convert these dictionaries to JSON.
 
 from decimal import Decimal
-from django.db.models.aggregates import Count
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Cart, CartItem, Genre, Movie, Review 
+from .models import Cart, CartItem, Customer, Genre, Movie, Review 
 from rest_framework import serializers
 
 
@@ -167,3 +166,16 @@ class UpdateCartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields = ['quantity']
+
+
+class CustomerSerializer(serializers.ModelSerializer):
+    #Set to readonly because we do not want clashes with someone else's account
+    # when trying to update a specific user's data 
+    user_id = serializers.IntegerField(read_only=True)
+
+    
+    class Meta:
+        model = Customer
+        fields = ['id', 'user_id', 'phone', 'age']
+
+

@@ -1,7 +1,7 @@
 from django.shortcuts import get_object_or_404
 from django.db.models.aggregates import Count
 from django_filters.rest_framework import DjangoFilterBackend
-#modules to search and filter the data
+from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
@@ -9,8 +9,8 @@ from rest_framework.response import Response
 from rest_framework import mixins
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import GenreFilters, MovieFilters, CartItemFilters
-from .models import Cart, CartItem,Genre, Movie, Review
-from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, GenreSerializer, MovieSerializer, ReviewSerializer, UpdateCartItemSerializer
+from .models import Cart, CartItem, Customer,Genre, Movie, Review
+from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, CustomerSerializer, GenreSerializer, MovieSerializer, ReviewSerializer, UpdateCartItemSerializer
 
 
 #Note to self, create a late fee charge custom view in the Order view 
@@ -109,13 +109,10 @@ class CartItemViewSet(ModelViewSet):
             
 
 
-
-
-
 class ReviewViewset(ModelViewSet):
     serializer_class = ReviewSerializer
 
-    #overrideing the queryset method in order to filter based on the movie id provided 
+    #overidding the queryset method in order to filter based on the movie id provided 
     #in the query parameters. SO if url is hub/movies/2/reviews/, we would only look at
     #the reviews for the movies with id, 2.
     def get_queryset(self):
@@ -127,4 +124,31 @@ class ReviewViewset(ModelViewSet):
     # and passing it to the serializer module.
     def get_serializer_context(self):
         return {'movie_id': self.kwargs.get('movie_pk')}
+
+
+class CustomerViewSet(ModelViewSet):
+    queryset = Customer.objects.all()
+    serializer_class = CustomerSerializer
+
+    #Function to get the current customer's profile. This would be an action
+    #  that is why it is defined with an action decorator. Detail is set to False to allow
+    # it to be included in the customer list view else it would be available on the
+    # customer detail view.
+
+    @action(detail=False)
+    def me(self, request):
+        #Getting information about the current logged in user from the authenticated middleware
+        #We are using a tuple because it would give us both the value for the current  
+        #logged in user and a boolean status result. if it does not exist it would return as an anonymous user.
+        # The get_or_create method is incase we do not have a current logged in user when trying to update data. 
+        (customer, created) = Customer.objects.get_or_create(user_id=request.user.id)
+        if request.method == 'GET':
+            serializer = CustomerSerializer(customer)
+            return Response(serializer.data)
+        elif request.method == 'POST':
+            #Passing in the current customer logged in and the data to be updated
+            serializer = CustomerSerializer(customer, data=request.data)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+            return Response(serializer.data)
 

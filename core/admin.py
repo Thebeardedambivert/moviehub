@@ -7,7 +7,9 @@ from .models import User
 #Admin model class for managing users
 @admin.register(User)
 class UserAdmin(BaseUserAdmin):
-    #Fields available to new users when signing on
+    #Fields available to new users when signing on,
+    # we are overridding this so that we can include the first name and
+    # last name fields.  
     add_fieldsets = (
         (
             None,
