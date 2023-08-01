@@ -10,8 +10,8 @@ from rest_framework.response import Response
 from rest_framework import mixins
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import GenreFilters, MovieFilters, CartItemFilters
-from .models import Cart, CartItem, Customer,Genre, Movie, Review
-from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, CustomerSerializer, GenreSerializer, MovieSerializer, ReviewSerializer, UpdateCartItemSerializer
+from .models import Cart, CartItem, Customer,Genre, Movie, RentOrder, Review
+from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, CustomerSerializer, GenreSerializer, MovieSerializer, RentOrderSerializer, ReviewSerializer, UpdateCartItemSerializer
 from .permissions import IsAdminOrReadOnly, BlockUserPermission, ViewCustomerHistoryPermission
 
 
@@ -179,3 +179,8 @@ class CustomerViewSet(ModelViewSet):
         if self.request.method == 'GET':
             return [AllowAny()]
         return [IsAuthenticated()]
+
+
+class RentOrderViewSet(ModelViewSet):
+    queryset = RentOrder.objects.all()
+    serializer_class = RentOrderSerializer

@@ -3,7 +3,7 @@
 
 from decimal import Decimal
 from django_filters.rest_framework import DjangoFilterBackend
-from .models import Cart, CartItem, Customer, Genre, Movie, Review 
+from .models import Cart, CartItem, Customer, Genre, Movie, RentOrder, RentOrderItem, Review 
 from rest_framework import serializers
 
 
@@ -177,5 +177,24 @@ class CustomerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Customer
         fields = ['id', 'user_id', 'phone', 'age']
+
+
+class RentOrderItemSerializer(serializers.ModelSerializer):
+    movie = SimpleMovieSerializer()
+
+    class Meta:
+        model = RentOrderItem
+        fields = ['id', 'movie', 'unit_price', 'quantity']
+
+        
+
+class RentOrderSerializer(serializers.ModelSerializer):
+    customer = serializers.IntegerField()
+
+    items = RentOrderItemSerializer(many=True)
+
+    class Meta:
+        model = RentOrder
+        fields = ['id', 'customer', 'order_status', 'rent_date', 'return_date', 'payment_status', 'items']
 
 
