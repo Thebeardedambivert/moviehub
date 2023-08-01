@@ -89,10 +89,13 @@ class Customer(models.Model):
     def last_name(self):
         return self.user.last_name
     
+
     class Meta:
         ordering = ['user__first_name', 'user__last_name']
+        #Adding custom permissions to the models.
         permissions = [
-            ('view_history', 'Can view history')
+            ('view_history', 'Can view history'),
+            ('block_user', 'Can block customer'),
         ]
 
 

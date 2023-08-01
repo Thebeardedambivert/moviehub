@@ -5,12 +5,15 @@ from rest_framework.decorators import action
 from rest_framework import status
 from rest_framework.filters import SearchFilter, OrderingFilter
 from rest_framework.pagination import PageNumberPagination
+from rest_framework.permissions import AllowAny, IsAuthenticated, IsAdminUser      
 from rest_framework.response import Response
 from rest_framework import mixins
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import GenreFilters, MovieFilters, CartItemFilters
 from .models import Cart, CartItem, Customer,Genre, Movie, Review
 from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, CustomerSerializer, GenreSerializer, MovieSerializer, ReviewSerializer, UpdateCartItemSerializer
+from .permissions import IsAdminOrReadOnly, BlockUserPermission, ViewCustomerHistoryPermission
+
 
 
 #Note to self, create a late fee charge custom view in the Order view 
@@ -26,6 +29,7 @@ class MovieViewSet(ModelViewSet):
     serializer_class = MovieSerializer
     filter_backends = [DjangoFilterBackend, SearchFilter, OrderingFilter]
     filterset_class = MovieFilters
+    permission_classes = [IsAdminOrReadOnly, BlockUserPermission]
     search_fields = ['title', 'genres__title']
     ordering_fields = ['daily_rental_rate', 'last_update']
 
@@ -55,6 +59,7 @@ class GenreViewSet(ModelViewSet):
     filter_backends = [DjangoFilterBackend]
     #Specifying the class to be used to filter
     filterset_class = GenreFilters
+    permission_classes = [IsAdminOrReadOnly, BlockUserPermission]
     
 
     def delete(self, request, pk):
@@ -129,13 +134,26 @@ class ReviewViewset(ModelViewSet):
 class CustomerViewSet(ModelViewSet):
     queryset = Customer.objects.all()
     serializer_class = CustomerSerializer
+    #list of permission classes that this endpoint requires
+    permission_classes = [IsAuthenticated]
 
     #Function to get the current customer's profile. This would be an action
     #  that is why it is defined with an action decorator. Detail is set to False to allow
     # it to be included in the customer list view else it would be available on the
     # customer detail view.
 
-    @action(detail=False)
+    @action(detail=True, permission_classes=[ViewCustomerHistoryPermission])
+    def history(self, request, pk):
+        pass
+
+    @action(detail=True, permission_classes=[BlockUserPermission])
+    def block(self, request, pk):
+        pass
+
+
+
+
+    @action(detail=False, methods=['GET', 'PUT'], permission_classes=[IsAuthenticated])
     def me(self, request):
         #Getting information about the current logged in user from the authenticated middleware
         #We are using a tuple because it would give us both the value for the current  
@@ -152,3 +170,12 @@ class CustomerViewSet(ModelViewSet):
             serializer.save()
             return Response(serializer.data)
 
+
+    #To add logic, for instance to apply different permissions depending on an action maybe an
+    #  IsAuthenticated permission to update data and an IsAdmin to be able to delete data,
+    #  that would require overriding the get_permissions function.
+
+    def get_permissions(self):
+        if self.request.method == 'GET':
+            return [AllowAny()]
+        return [IsAuthenticated()]
