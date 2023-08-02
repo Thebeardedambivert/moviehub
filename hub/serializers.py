@@ -2,6 +2,7 @@
 #and convert these dictionaries to JSON.
 
 from decimal import Decimal
+from django.db import transaction
 from django_filters.rest_framework import DjangoFilterBackend
 from .models import Cart, CartItem, Customer, Genre, Movie, RentOrder, RentOrderItem, Review 
 from rest_framework import serializers
@@ -198,3 +199,36 @@ class RentOrderSerializer(serializers.ModelSerializer):
         fields = ['id', 'customer', 'order_status', 'rent_date', 'return_date', 'payment_status', 'items']
 
 
+
+#class for creating an order. Using a base serializer because I 
+#am not collecting information of a model since the cart_id is not within the rentorder model.
+
+
+class CreateRentOrderSerializer(serializers.Serializer):
+    cart_id = serializers.UUIDField()
+
+    #overriding the way that this serializer is saved because we want to 
+    #input the cart id and go ahead to dellete that cart.
+    def save(self, **kwargs):
+        with transaction.atomic():
+            cart_id = self.validated_data['cart_id']
+            #getting the user id from the context.
+            user_id = self.context['user_id']
+            #getting the current customer.
+            (customer_id, created) = Customer.objects.get_or_create(customer_id=user_id)
+            #Creating the rentorder for the particular customer
+            order = RentOrder.objects.create(customer_id=customer_id)
+
+            #getting the cartitems for a particular cart.
+            cart_item = CartItem.objects.select_related('movie').filter(cart_id=cart_id)
+
+            #converting a cart item into an order item by placing the values 
+            #of the cartitem into the orderitem using a list comprehension
+            rentorder_items = [RentOrderItem(
+                order=order,
+                movie=item.movie,
+                unit_price=item.movie.unit_price,
+                quantity=item.quantity,
+                ) for item in cart_item]
+            RentOrderItem.objects.bulk_create(rentorder_items)
+            Cart.objects.filter(pk=cart_id).delete()

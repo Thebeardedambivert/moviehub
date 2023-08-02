@@ -9,7 +9,7 @@ router.register('movies', MovieViewSet, basename='movies')
 router.register('genres', GenreViewSet)
 router.register('carts', CartViewSet, basename='carts')
 router.register('customers', CustomerViewSet)
-router.register('rentorders', RentOrderViewSet)
+router.register('rentorders', RentOrderViewSet, basename='rentorders')
 
 #Creating a parent router, movies, for the child router using the parent router, the parent prefix for the
 # child resource and the lookup parameter for the child resource 

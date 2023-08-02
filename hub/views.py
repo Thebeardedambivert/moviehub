@@ -11,7 +11,7 @@ from rest_framework import mixins
 from rest_framework.viewsets import ModelViewSet, GenericViewSet
 from .filters import GenreFilters, MovieFilters, CartItemFilters
 from .models import Cart, CartItem, Customer,Genre, Movie, RentOrder, Review
-from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, CustomerSerializer, GenreSerializer, MovieSerializer, RentOrderSerializer, ReviewSerializer, UpdateCartItemSerializer
+from .serializers import AddCartItemSerializer, CartSerializer, CartItemSerializer, CreateRentOrderSerializer, CustomerSerializer, GenreSerializer, MovieSerializer, RentOrderSerializer, ReviewSerializer, UpdateCartItemSerializer
 from .permissions import IsAdminOrReadOnly, BlockUserPermission, ViewCustomerHistoryPermission
 
 
@@ -182,5 +182,29 @@ class CustomerViewSet(ModelViewSet):
 
 
 class RentOrderViewSet(ModelViewSet):
-    queryset = RentOrder.objects.all()
-    serializer_class = RentOrderSerializer
+    permission_classes = [IsAuthenticated]
+
+    #overriding the queryset to return all orders if the user is a staff 
+    #else return only the orders of the current user if the person isn't.
+
+
+    def get_queryset(self):
+        user = self.request.user
+        #If the user is a staff.
+        if user.is_staff:
+           RentOrder.objects.all()
+        #The only way to get the current user's id is not from the url 
+        #as has been done all this while but from self.request.user
+        (customer_id, created) = Customer.objects.only('id').get_or_create(user_id=user.id)
+        #Then we return the curent user's order.
+        return RentOrder.objects.filter(customer_id=customer_id)
+    
+
+    def get_serializer_class(self):
+        if self.request.method == 'POST':
+            return CreateRentOrderSerializer
+        return RentOrderSerializer
+    
+
+    def get_serializer_context(self):
+        return {'user_id': self.request.user.id}
